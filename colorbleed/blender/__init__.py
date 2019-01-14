@@ -35,10 +35,11 @@ def install():
     # in the background. By having an instance created already this also
     # ensures the Avalon tools will not trigger exec_() as they will assume
     # the current QApplication instance is already executing.
-    from avalon.vendor.Qt import QtWidgets
-    app = QtWidgets.QApplication.instance()
-    if app is None:
-        app = QtWidgets.QApplication(sys.argv)
+    # todo: disabled this, it doesn't seem to work (garbage collection??)
+    #from avalon.vendor.Qt import QtWidgets
+    #app = QtWidgets.QApplication.instance()
+    #if app is None:
+    #    app = QtWidgets.QApplication(sys.argv)
 
     # Somehow this instance gets closed after this script finished running.
     # Probably because Blender 'cleans up' and garbage collects the finished
