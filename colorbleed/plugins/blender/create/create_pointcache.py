@@ -56,7 +56,7 @@ class CreatePointcache(avalon.api.Creator):
         # Link selection when option was passed
         if (self.options or {}).get("useSelection"):
             print("Use selection")
-            selection = bpy.context.selected_objects
+            selection = lib.get_selected()
             for obj in selection:
                 collection.objects.link(obj)
 
