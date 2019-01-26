@@ -1,5 +1,17 @@
 import avalon.api as api
+
+from avalon.blender import pipeline
 from avalon.blender.pipeline import containerise
+from avalon.blender import lib
+
+
+def is_avalon_container(collection):
+    # TODO: Accurately detect whether the collection is an avalon internal
+    #  container (check attributes, etc.)
+    if collection.name == pipeline.AVALON_CONTAINERS:
+        return True
+
+    return False
 
 
 class AbcLoader(api.Loader):
@@ -21,18 +33,25 @@ class AbcLoader(api.Loader):
              data=None):
 
         import bpy
+
+        # Ensure the currently active Collection is not an Avalon container
+        # otherwise any loading operation will be loaded into that and
+        # the selection will also not get caught correctly after import.
+        collection = bpy.context.collection
+        if is_avalon_container(collection):
+            print("Import operation ignored as you are currently inside an "
+                  "avalon collection. Please ensure you are active in the "
+                  "scene collection you want to work in.")
+            return
+
         import os
         assert os.path.exists(self.fname), "%s does not exist." % self.fname
 
         # TODO: figure out if there's some sort of namespacing in Blender?
-        # asset = context['asset']
-        # namespace = namespace or lib.unique_namespace(
-        #     asset["name"] + "_",
-        #     prefix="_" if asset["name"][0].isdigit() else "",
-        #     suffix="_",
-        # )
+        namespace = context['asset']['name']
 
         result = bpy.ops.wm.alembic_import(
+            lib.get_override_context(),
             filepath=self.fname,
             set_frame_range=False,
             is_sequence=False,
@@ -44,10 +63,11 @@ class AbcLoader(api.Loader):
 
         # The new nodes are the ones that are selected directly after
         # the import
-        nodes = bpy.context.selected_objects
+        nodes = lib.get_selected()
 
         # Only containerize if any nodes were loaded by the Loader
         if not nodes:
+            print("No nodes selected after import Alembic?")
             return
 
         return containerise(
