@@ -263,7 +263,12 @@ def collect_container_metadata(container):
     # TODO: Improve method of getting the host lib module
     host_name = _get_host_name()
     package_name = "colorbleed.{}.lib".format(host_name)
-    hostlib = importlib.import_module(package_name)
+    try:
+        hostlib = importlib.import_module(package_name)
+    except ImportError as exc:
+        log.debug("Config host has no lib.py module: %s" % (exc,))
+        # The host likely has no .lib module
+        return {}
 
     if not hasattr(hostlib, "get_additional_data"):
         return {}
