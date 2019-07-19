@@ -47,28 +47,40 @@ class ExtractAudioTrack(colorbleed.api.Extractor):
 
         args = ["ffmpeg"]
 
+        # Calculate full duration in seconds
+        fps = mel.eval('currentTimeUnitToFPS()')
+        duration = (end - start) / fps
+
         for node in instance.data["audio"]:
 
             audio_input_filename = cmds.getAttr(node + ".filename")
-            fps = mel.eval('currentTimeUnitToFPS()')
             offset = cmds.getAttr(node + ".offset")
 
             offset_frames = start - offset
             offset_seconds = offset_frames / fps
 
-            duration = (end - start) / fps
+            has_offset = offset_seconds != 0
+            if has_offset:
+                # Offset audio clip
+                if offset_seconds > 0:
+                    # Forward offset
 
-            # Offset sound clip
-            if offset_seconds > 0:
-                # Forward offset
-                args.append("-ss")
-            else:
-                # Reverse offset
-                args.append("-itsoffset")
+                    # Set start seek
+                    args.append("-ss")
+                    args.append(str(abs(offset_seconds)))
 
-            args.append(str(abs(offset_seconds)))
+                    # Input file after -ss
+                    args.extend(["-i", audio_input_filename])
 
-            args.extend(["-i", audio_input_filename])
+                else:
+                    # Reverse offset
+
+                    # audio delay is in milliseconds (integers)
+                    delay = int(abs(offset_seconds) * 1000)
+                    channel_count = 5   # assume no more than 5 channels
+                    channel_delay = [str(delay)] * channel_count
+                    audio_filter = "adelay=" + "|".join(channel_delay)
+                    args.extend(["-af", audio_filter])
 
             # Set duration for clip
             args.extend(["-t", str(duration)])
@@ -79,12 +91,12 @@ class ExtractAudioTrack(colorbleed.api.Extractor):
 
         # See: https://stackoverflow.com/a/37298513/1838864
         args.append("-vn")              # Force no video
-        args.extend(["-ar", "44100"])   # Audio rate
+        args.extend(["-ar", "48000"])   # Audio rate
         args.extend(["-ac", "2"])       # Audio channel count
         args.extend(["-b:a", "192k"])   # Audio bitrate
 
         staging = self.staging_dir(instance)
-        audio_file = os.path.join(staging, "audio_track.mp3")
+        audio_file = os.path.join(staging, "audio_track.wav")
         args.append(audio_file)
 
         # Log the full command for debugging

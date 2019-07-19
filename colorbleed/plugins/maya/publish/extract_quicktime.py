@@ -119,7 +119,7 @@ class ExtractQuicktime(colorbleed.api.Extractor):
         # Exclude a potential audio track that we might have encoded.
         # todo: remove this hardcoded exclusion of audio file
         collected_frames = [x for x in collected_frames
-                            if not x.endswith(".mp3")]
+                            if not x.endswith(".wav")]
 
         # todo: support negative frames as input
         collections, remainder = clique.assemble(collected_frames)
